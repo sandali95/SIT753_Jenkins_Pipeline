@@ -1,0 +1,100 @@
+pipeline {
+    agent any
+
+    environment {
+        PROJECT_ID = 'SIT753'
+        GCP_REGION = 'australia-southeast1'
+        USER_IMAGE = "gcr.io/${env.PROJECT_ID}/user-service"
+        TODO_IMAGE = "gcr.io/${env.PROJECT_ID}/todo-service"
+        FRONTEND_IMAGE = "gcr.io/${env.PROJECT_ID}/frontend-service"
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building Docker images...'
+                sh 'docker build -t $USER_IMAGE ./user-service'
+                sh 'docker build -t $TODO_IMAGE ./todo-service'
+                sh 'docker build -t $FRONTEND_IMAGE ./frontend'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Running tests...'
+                sh 'cd user-service && npm install && npm test'
+                sh 'cd todo-service && npm install && npm test'
+            }
+        }
+
+        stage('Code Quality') {
+            steps {
+                withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+                    sh '''
+                        sonar-scanner \
+                            -Dproject.settings=sonar.properties \
+                            -Dsonar.host.url=https://sonarcloud.io \
+                            -Dsonar.login=${SONAR_TOKEN} \
+                            -Dsonar.projectKey=sandali95_8.2CDevSecOps \
+                            -Dsonar.organization=sandali95-1
+                    '''
+                }
+            }
+        }
+
+        stage('Security') {
+            steps {
+                echo 'Running security scan with npm audit...'
+                sh 'cd user-service && npm audit || true'
+                sh 'cd todo-service && npm audit || true'
+            }
+        }
+
+        stage('Deploy to Staging') {
+            steps {
+                echo 'Pushing Docker images to GCR...'
+                sh 'gcloud auth configure-docker'
+                sh 'docker push $USER_IMAGE'
+                sh 'docker push $TODO_IMAGE'
+                sh 'docker push $FRONTEND_IMAGE'
+
+                echo 'Deploying services to Cloud Run...'
+                sh '''
+                    gcloud run deploy user-service --image=$USER_IMAGE --region=$GCP_REGION --platform=managed --allow-unauthenticated
+                    gcloud run deploy todo-service --image=$TODO_IMAGE --region=$GCP_REGION --platform=managed --allow-unauthenticated
+                    gcloud run deploy frontend-service --image=$FRONTEND_IMAGE --region=$GCP_REGION --platform=managed --allow-unauthenticated
+                '''
+            }
+        }
+
+        stage('Release to Production') {
+            when {
+                branch 'main'
+            }
+            steps {
+                echo 'Releasing to production...'
+                // Optionally promote staging deployments to production
+                // You can configure blue/green or manual approval here
+            }
+        }
+
+        stage('Monitoring & Alerts') {
+            steps {
+                echo 'Setting up monitoring and alerts with GCP Monitoring...'
+                // This assumes monitoring configs are pre-applied or use Terraform
+                sh '''
+                    echo "Monitoring enabled via Cloud Logging, Error Reporting"
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline execution completed.'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+    }
+}

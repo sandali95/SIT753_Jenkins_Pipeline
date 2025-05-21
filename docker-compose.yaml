@@ -1,0 +1,65 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+
+  user-service:
+    build:
+      context: ./user-service
+    container_name: user-service
+    environment:
+      - PORT=3000
+      - MONGO_URI=mongodb://mongo:27017/todoapp
+      - JWT_SECRET=your_jwt_secret
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongo
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  todo-service:
+    build:
+      context: ./todo-service
+    container_name: todo-service
+    environment:
+      - PORT=3001
+      - MONGO_URI=mongodb://mongo:27017/todoapp
+      - JWT_SECRET=your_jwt_secret
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mongo
+      - user-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  frontend-service:
+    build:
+      context: ./frontend-gateway
+    container_name: frontend-gateway
+    environment:
+      - PORT=3002
+      - USER_SERVICE_URL=http://user-service:3000
+      - TODO_SERVICE_URL=http://todo-service:3001
+    ports:
+      - "3002:3002"
+    depends_on:
+      - user-service
+      - todo-service
+
+volumes:
+  mongo_data:

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cloud‑Native Todo App</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Todo App</h1>
+
+    <!-- Signup/Login Form -->
+    <section id="auth-section">
+      <h2>Login / Signup</h2>
+      <input type="text" id="username" placeholder="Username">
+      <input type="password" id="password" placeholder="Password">
+      <div class="btn-group">
+        <button id="signup-btn">Sign Up</button>
+        <button id="login-btn">Log In</button>
+      </div>
+      <div id="auth-error" class="error"></div>
+    </section>
+
+    <!-- Todo Management Section -->
+    <section id="todo-section" class="hidden">
+      <h2>Your Todo List</h2>
+      <div class="add-group">
+        <input type="text" id="newTodo" placeholder="Enter a new todo">
+        <button id="add-btn">Add Todo</button>
+      </div>
+      <ul id="todo-list"></ul>
+      <button id="logout-btn" class="logout">Logout</button>
+    </section>
+  </div>
+
+  <script src="/script.js"></script>
+</body>
+</html>
