@@ -7,7 +7,11 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 let app, mongoServer, token, todoId;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryServer.create({
+    binary: {
+      version: '4.4.10' // or any 4.4.x version
+    }
+  });
   process.env.MONGODB_URI = mongoServer.getUri();
   process.env.JWT_SECRET  = 'testsecret';
 

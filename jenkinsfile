@@ -10,20 +10,26 @@ pipeline {
     }
 
     stages {
-        stage('Build') {
+        stage('Checkout') {
             steps {
-                echo 'Building Docker images...'
-                sh 'docker build -t $USER_IMAGE ./user-service'
-                sh 'docker build -t $TODO_IMAGE ./todo-service'
-                sh 'docker build -t $FRONTEND_IMAGE ./frontend'
+                git branch: 'master', 
+                url: 'https://github.com/sandali95/SIT753_Jenkins_Pipeline.git'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh 'cd user-service && npm install'
+                sh 'cd todo-service && npm install'
+                sh 'cd frontend-gateway && npm install'
             }
         }
 
         stage('Test') {
             steps {
                 echo 'Running tests...'
-                sh 'cd user-service && npm install && npm test'
-                sh 'cd todo-service && npm install && npm test'
+                sh 'cd user-service && npm test'
+                sh 'cd todo-service && npm test'
             }
         }
 
@@ -35,7 +41,7 @@ pipeline {
                             -Dproject.settings=sonar.properties \
                             -Dsonar.host.url=https://sonarcloud.io \
                             -Dsonar.login=${SONAR_TOKEN} \
-                            -Dsonar.projectKey=sandali95_8.2CDevSecOps \
+                            -Dsonar.projectKey=sandali95-1_todo-app \
                             -Dsonar.organization=sandali95-1
                     '''
                 }
@@ -47,6 +53,15 @@ pipeline {
                 echo 'Running security scan with npm audit...'
                 sh 'cd user-service && npm audit || true'
                 sh 'cd todo-service && npm audit || true'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Building Docker images...'
+                sh 'docker build -t $USER_IMAGE ./user-service'
+                sh 'docker build -t $TODO_IMAGE ./todo-service'
+                sh 'docker build -t $FRONTEND_IMAGE ./frontend'
             }
         }
 
