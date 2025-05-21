@@ -143,7 +143,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Internal Server Error Occurred", message: err.message });
 });
 
-module.exports = app;              
+module.exports = { app,Todo };              
 if (require.main === module) {    
   const PORT = process.env.PORT || 3001;
   app.listen(PORT, () => logger.info(`Todo Service running on port ${PORT}`));
